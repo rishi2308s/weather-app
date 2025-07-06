@@ -7,6 +7,7 @@
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+
   <script>
     tailwind.config = {
       theme: {
@@ -20,10 +21,26 @@
   <div class="w-full max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-6 space-y-6">
     <h1 class="text-3xl font-bold text-center text-blue-900">Weather Forecast</h1>
     
-    <div class="flex gap-3">
-      <input id="cityInput" type="text" placeholder="Enter city name" class="flex-grow px-4 py-2 rounded border border-gray-300 focus:outline-blue-500" />
-      <button id="searchBtn" class="bg-blue-600 text-white px-4 rounded hover:bg-blue-700 transition">Search</button>
-      <button id="currentLocationBtn" class="bg-green-600 text-white px-4 rounded hover:bg-green-700 transition" title="Get weather for current location">📍</button>
+    <div class="flex flex-col gap-3 md:flex-row">
+      <input
+        id="cityInput"
+        type="text"
+        placeholder="Enter city name"
+        class="flex-grow px-4 py-2 rounded border border-gray-300 focus:outline-blue-500"
+      />
+      <button
+        id="searchBtn"
+        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition w-full md:w-auto"
+      >
+        Search
+      </button>
+      <button
+        id="currentLocationBtn"
+        class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition w-full md:w-auto"
+        title="Get weather for current location"
+      >
+        Current Location
+      </button>
     </div>
 
     <div id="recentSearches" class="hidden">
@@ -32,6 +49,30 @@
     </div>
 
     <div id="errorMessage" class="text-red-600 font-semibold text-center"></div>
+
+    <!-- Spinner (hidden by default) -->
+    <div id="spinner" class="hidden flex justify-center items-center mt-4">
+      <svg
+        class="animate-spin h-8 w-8 text-blue-600"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          class="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          stroke-width="4"
+        ></circle>
+        <path
+          class="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+        ></path>
+      </svg>
+    </div>
 
     <div id="weatherDisplay" class="space-y-4"></div>
   </div>

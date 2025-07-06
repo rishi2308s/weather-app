@@ -7,60 +7,48 @@ const weatherDisplay = document.getElementById("weatherDisplay");
 const recentDropdown = document.getElementById("recentDropdown");
 const recentSearches = document.getElementById("recentSearches");
 const errorMessage = document.getElementById("errorMessage");
+const spinner = document.getElementById("spinner");
 
-searchBtn.addEventListener("click", () => {
-  const city = cityInput.value.trim();
-  if (!city) {
-    showError("Please enter a city name.");
-    return;
-  }
-  clearError();
-  fetchWeather(city);
-  saveCity(city);
-});
+let isLoading = false;
 
-recentDropdown.addEventListener("change", () => {
-  const city = recentDropdown.value;
-  if (city) {
-    clearError();
-    fetchWeather(city);
-  }
-});
-
-currentLocationBtn.addEventListener("click", () => {
-  if (!navigator.geolocation) {
-    showError("Geolocation is not supported by your browser.");
-    return;
-  }
-  clearError();
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      const { latitude, longitude } = pos.coords;
-      fetchWeather(`${latitude},${longitude}`);
-    },
-    () => showError("Unable to retrieve your location.")
-  );
-});
-
-function fetchWeather(query) {
-  weatherDisplay.innerHTML = `<p class="italic text-center">Loading weather data for <strong>${query}</strong>...</p>`;
-
-  fetch(
-    `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${encodeURIComponent(
-      query
-    )}&days=5&aqi=no&alerts=no`
-  )
-    .then((res) => res.json())
-    .then((data) => {
-      if (data.error) throw new Error(data.error.message);
-      renderWeather(data);
-    })
-    .catch((err) => {
-      showError(err.message);
-      weatherDisplay.innerHTML = "";
-    });
+// Toggle loading state: show spinner, disable inputs/buttons
+function setLoading(loading) {
+  isLoading = loading;
+  spinner.classList.toggle("hidden", !loading);
+  searchBtn.disabled = loading;
+  currentLocationBtn.disabled = loading;
+  cityInput.disabled = loading;
 }
 
+// Show error message
+function showError(message) {
+  errorMessage.textContent = message;
+}
+
+// Clear error message
+function clearError() {
+  errorMessage.textContent = "";
+}
+
+// Fetch weather data from API
+async function fetchWeather(query) {
+  weatherDisplay.innerHTML = ""; // Clear old data
+  try {
+    const res = await fetch(
+      `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${encodeURIComponent(
+        query
+      )}&days=5&aqi=no&alerts=no`
+    );
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    renderWeather(data);
+    saveCity(data.location.name);
+  } catch (err) {
+    showError(err.message);
+  }
+}
+
+// Render weather info on the page
 function renderWeather(data) {
   const { location, current, forecast } = data;
 
@@ -101,6 +89,7 @@ function renderWeather(data) {
   `;
 }
 
+// Save city in localStorage and update recent dropdown
 function saveCity(city) {
   let cities = JSON.parse(localStorage.getItem("recentCities")) || [];
   cities = [city, ...cities.filter((c) => c !== city)].slice(0, 5);
@@ -108,6 +97,7 @@ function saveCity(city) {
   updateRecentDropdown(cities);
 }
 
+// Update recent cities dropdown UI
 function updateRecentDropdown(cities) {
   if (cities.length === 0) {
     recentSearches.classList.add("hidden");
@@ -119,16 +109,53 @@ function updateRecentDropdown(cities) {
   recentSearches.classList.remove("hidden");
 }
 
-function showError(message) {
-  errorMessage.textContent = message;
-}
+// Event Listeners
 
-function clearError() {
-  errorMessage.textContent = "";
-}
+searchBtn.addEventListener("click", () => {
+  if (isLoading) return; // prevent multiple fetches
+  const city = cityInput.value.trim();
+  if (!city) {
+    showError("Please enter a city name.");
+    return;
+  }
+  clearError();
+  setLoading(true);
+  fetchWeather(city).finally(() => setLoading(false));
+});
 
-// On page load, populate recent cities dropdown
+recentDropdown.addEventListener("change", () => {
+  if (isLoading) return;
+  const city = recentDropdown.value;
+  if (city) {
+    clearError();
+    setLoading(true);
+    fetchWeather(city).finally(() => setLoading(false));
+  }
+});
+
+currentLocationBtn.addEventListener("click", () => {
+  if (isLoading) return;
+  if (!navigator.geolocation) {
+    showError("Geolocation is not supported by your browser.");
+    return;
+  }
+  clearError();
+  setLoading(true);
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { latitude, longitude } = pos.coords;
+      fetchWeather(`${latitude},${longitude}`).finally(() => setLoading(false));
+    },
+    () => {
+      showError("Unable to retrieve your location.");
+      setLoading(false);
+    }
+  );
+});
+
+// Initialize recent searches dropdown on page load
 window.addEventListener("load", () => {
   const savedCities = JSON.parse(localStorage.getItem("recentCities")) || [];
   updateRecentDropdown(savedCities);
+  clearError();
 });
